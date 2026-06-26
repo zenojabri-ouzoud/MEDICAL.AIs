@@ -1,3 +1,2 @@
-streamlit
-google-generativeai
-python-dotenv
+pip install streamlit --upgrade
+pip install google-generativeai --upgrade
