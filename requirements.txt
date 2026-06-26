@@ -1,2 +1,2 @@
-pip install streamlit --upgrade
-pip install google-generativeai --upgrade
+streamlit 
+google-generativeai 
