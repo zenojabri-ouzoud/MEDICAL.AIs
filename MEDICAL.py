@@ -36,9 +36,10 @@ data = {
 
 st.title("🌍 تحدي الـ 100 عاصمة")
 
+# تهيئة المتغيرات
 if 'score' not in st.session_state:
     st.session_state.score = 0
-if 'country' not in st.session_state:
+if 'country' not in st.session_state or st.session_state.country not in data:
     st.session_state.country = random.choice(list(data.keys()))
 
 st.subheader(f"ما هي عاصمة: {st.session_state.country}؟")
@@ -46,15 +47,18 @@ st.subheader(f"ما هي عاصمة: {st.session_state.country}؟")
 guess = st.text_input("أدخل الإجابة:")
 
 if st.button("تحقق"):
-    if guess.strip() == data[st.session_state.country]:
+    # نستخدم .get() باش نتفاداو الـ KeyError
+    correct_answer = data.get(st.session_state.country)
+    if guess.strip() == correct_answer:
         st.success("✅ صحيح! أنت بطل.")
         st.session_state.score += 1
         st.session_state.country = random.choice(list(data.keys()))
         st.rerun()
     else:
-        st.error(f"❌ خطأ! العاصمة الصحيحة هي: {data[st.session_state.country]}")
-        if st.button("السؤال التالي"):
-            st.session_state.country = random.choice(list(data.keys()))
-            st.rerun()
+        st.error(f"❌ خطأ! العاصمة الصحيحة هي: {correct_answer}")
 
 st.write(f"### مجموع نقاطك الحالي: {st.session_state.score}")
+
+if st.button("تغيير الدولة"):
+    st.session_state.country = random.choice(list(data.keys()))
+    st.rerun()
