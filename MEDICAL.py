@@ -1,48 +1,60 @@
 import streamlit as st
 import random
 
-# قاعدة البيانات بـ 40 دولة
+# قاعدة بيانات بـ 100 دولة
 data = {
-    "Morocco": "Rabat", "France": "Paris", "Japan": "Tokyo", "Egypt": "Cairo",
-    "Germany": "Berlin", "Italy": "Rome", "Spain": "Madrid", "UK": "London",
-    "USA": "Washington", "Canada": "Ottawa", "China": "Beijing", "Russia": "Moscow",
-    "Brazil": "Brasilia", "Argentina": "Buenos Aires", "Australia": "Canberra",
-    "India": "New Delhi", "Turkey": "Ankara", "South Korea": "Seoul",
-    "Saudi Arabia": "Riyadh", "UAE": "Abu Dhabi", "Nigeria": "Abuja",
-    "South Africa": "Pretoria", "Mexico": "Mexico City", "Netherlands": "Amsterdam",
-    "Belgium": "Brussels", "Switzerland": "Bern", "Sweden": "Stockholm",
-    "Norway": "Oslo", "Finland": "Helsinki", "Denmark": "Copenhagen",
-    "Greece": "Athens", "Portugal": "Lisbon", "Poland": "Warsaw",
-    "Thailand": "Bangkok", "Vietnam": "Hanoi", "Indonesia": "Jakarta",
-    "Malaysia": "Kuala Lumpur", "Iran": "Tehran", "Pakistan": "Islamabad",
-    "Qatar": "Doha"
+    "المغرب": "الرباط", "فرنسا": "باريس", "اليابان": "طوكيو", "مصر": "القاهرة",
+    "ألمانيا": "برلين", "إيطاليا": "روما", "إسبانيا": "مدريد", "بريطانيا": "لندن",
+    "أمريكا": "واشنطن", "كندا": "أوتاوا", "الصين": "بكين", "روسيا": "موسكو",
+    "البرازيل": "برازيليا", "الأرجنتين": "بوينس آيرس", "أستراليا": "كانبيرا",
+    "الهند": "نيودلهي", "تركيا": "أنقرة", "كوريا الجنوبية": "سول",
+    "السعودية": "الرياض", "الإمارات": "أبوظبي", "نيجيريا": "أبوجا",
+    "جنوب أفريقيا": "بريتوريا", "المكسيك": "مكسيكو", "هولندا": "أمستردام",
+    "بلجيكا": "بروكسل", "سويسرا": "بيرن", "السويد": "ستوكهولم",
+    "النرويج": "أوسلو", "فنلندا": "هلسنكي", "الدنمارك": "كوبنهاغن",
+    "اليونان": "أثينا", "البرتغال": "لشبونة", "بولندا": "وارسو",
+    "تايلاند": "بانكوك", "فيتنام": "هانوي", "إندونيسيا": "جاكرتا",
+    "ماليزيا": "كوالالمبور", "إيران": "طهران", "باكستان": "إسلام آباد",
+    "قطر": "الدوحة", "الكويت": "الكويت", "عمان": "مسقط", "العراق": "بغداد",
+    "لبنان": "بيروت", "سوريا": "دمشق", "الأردن": "عمان", "تونس": "تونس",
+    "الجزائر": "الجزائر", "ليبيا": "طرابلس", "السودان": "الخرطوم",
+    "الصومال": "مقديشو", "موريتانيا": "نواكشوط", "اليمن": "صنعاء",
+    "تشاد": "انجمينا", "النيجر": "نيامي", "مالي": "باماكو", "السنغال": "داكار",
+    "غانا": "أكرا", "كينيا": "نيروبي", "إثيوبيا": "أديس أبابا", "أوغندا": "كمبالا",
+    "أنغولا": "لواندا", "زمبابوي": "هراري", "مدغشقر": "أنتاناناريفو",
+    "تشيلي": "سانتياغو", "كولومبيا": "بوغوتا", "بيرو": "ليما", "فنزويلا": "كراكاس",
+    "كوبا": "هافانا", "جامايكا": "كينغستون", "النمسا": "فيينا", "المجر": "بودابست",
+    "التشيك": "براغ", "رومانيا": "بوخارست", "بلغاريا": "صوفيا", "صربيا": "بلغراد",
+    "أوكرانيا": "كييف", "بيلاروسيا": "مينسك", "كازاخستان": "أستانا",
+    "أوزبكستان": "طشقند", "أفغانستان": "كابول", "نيوزيلندا": "ويلينغتون",
+    "الفلبين": "مانيلا", "سنغافورة": "سنغافورة", "بنغلاديش": "دكا",
+    "سريلانكا": "كولومبو", "نيبال": "كاتماندو", "أيرلندا": "دبلن",
+    "آيسلندا": "ريكيافيك", "لوكسومبورغ": "لوكسومبورغ", "قبرص": "نيقوسيا",
+    "مالطا": "فاليتا", "موناكو": "موناكو", "الفاتيكان": "الفاتيكان",
+    "جزر المالديف": "ماليه", "فيجي": "سوفا", "هندوراس": "تيغوسيغالبا"
 }
 
-st.title("🎮 لعبة تخمين العاصمة")
+st.title("🌍 تحدي الـ 100 عاصمة")
 
-# تهيئة السكور والأسئلة في الجلسة (Session State)
 if 'score' not in st.session_state:
     st.session_state.score = 0
 if 'country' not in st.session_state:
     st.session_state.country = random.choice(list(data.keys()))
 
-country = st.session_state.country
+st.subheader(f"ما هي عاصمة: {st.session_state.country}؟")
 
-st.write(f"### ما هي عاصمة دولة: {country}؟")
-guess = st.text_input("اكتب العاصمة هنا:")
+guess = st.text_input("أدخل الإجابة:")
 
 if st.button("تحقق"):
-    if guess.strip().capitalize() == data[country]:
-        st.success("✅ صحيح! أحسنت.")
+    if guess.strip() == data[st.session_state.country]:
+        st.success("✅ صحيح! أنت بطل.")
         st.session_state.score += 1
         st.session_state.country = random.choice(list(data.keys()))
-        st.rerun() # لإعادة تحميل الصفحة للسؤال الموالي
+        st.rerun()
     else:
-        st.error("❌ خطأ، حاول مرة أخرى!")
+        st.error(f"❌ خطأ! العاصمة الصحيحة هي: {data[st.session_state.country]}")
+        if st.button("السؤال التالي"):
+            st.session_state.country = random.choice(list(data.keys()))
+            st.rerun()
 
-st.write(f"### مجموع نقاطك: {st.session_state.score}")
-
-if st.button("إعادة اللعبة من الصفر"):
-    st.session_state.score = 0
-    st.session_state.country = random.choice(list(data.keys()))
-    st.rerun()
+st.write(f"### مجموع نقاطك الحالي: {st.session_state.score}")
