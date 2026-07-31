@@ -151,17 +151,17 @@ def init_database():
         )
     ''')
     
-    # ====== إضافة مستخدم افتراضي "admin" ======
-    cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
-    admin_exists = cursor.fetchone()
+    # ====== إضافة مستخدم افتراضي "version" ======
+    cursor.execute('SELECT * FROM users WHERE username = ?', ('version',))
+    user_exists = cursor.fetchone()
     
-    if not admin_exists:
-        hashed_password = hash_password("admin123")
+    if not user_exists:
+        hashed_password = hash_password("123456789")
         cursor.execute('''
             INSERT INTO users (username, password, full_name, business_name, business_phone, business_email, position, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ''', ('admin', hashed_password, 'مدير النظام', 'مكتبي', '0612345678', 'admin@example.com', 'مدير'))
-        print("✅ تم إنشاء المستخدم admin بكلمة مرور: admin123")
+        ''', ('version', hashed_password, 'مدير النظام', 'مكتبي', '0612345678', 'admin@example.com', 'مدير'))
+        print("✅ تم إنشاء المستخدم version بكلمة مرور: 123456789")
     
     conn.commit()
     conn.close()
@@ -2013,9 +2013,9 @@ if not st.session_state.authenticated:
                     st.rerun()
         
         with col2:
-            st.info("📝 التسجيل: أنشئ حسابك الخاص")
-            st.info("🔑 أدخل اسم المستخدم وكلمة المرور")
-            st.info("👤 المستخدم الافتراضي: admin / admin123")
+            st.info("👤 المستخدم الافتراضي: version")
+            st.info("🔑 كلمة المرور: 123456789")
+            st.info("📝 أو قم بإنشاء حساب جديد")
     
     else:
         st.subheader(t("register_button"))
