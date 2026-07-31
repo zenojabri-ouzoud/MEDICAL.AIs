@@ -18,8 +18,11 @@ from PIL import Image
 # ==================== إعداد SQLite ==================== #
 DB_NAME = "business_management.db"
 
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
 def init_database():
-    """إنشاء جميع الجداول في قاعدة البيانات"""
+    """إنشاء جميع الجداول في قاعدة البيانات مع مستخدم افتراضي"""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
@@ -148,6 +151,18 @@ def init_database():
         )
     ''')
     
+    # ====== إضافة مستخدم افتراضي "admin" ======
+    cursor.execute('SELECT * FROM users WHERE username = ?', ('admin',))
+    admin_exists = cursor.fetchone()
+    
+    if not admin_exists:
+        hashed_password = hash_password("admin123")
+        cursor.execute('''
+            INSERT INTO users (username, password, full_name, business_name, business_phone, business_email, position, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ''', ('admin', hashed_password, 'مدير النظام', 'مكتبي', '0612345678', 'admin@example.com', 'مدير'))
+        print("✅ تم إنشاء المستخدم admin بكلمة مرور: admin123")
+    
     conn.commit()
     conn.close()
 
@@ -158,11 +173,8 @@ init_database()
 def get_connection():
     return sqlite3.connect(DB_NAME)
 
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
-
 def check_user(username, password):
-    """التحقق من المستخدم - فقط باستخدام اسم المستخدم وكلمة المرور الخاصة به"""
+    """التحقق من المستخدم"""
     conn = get_connection()
     cursor = conn.cursor()
     hashed = hash_password(password)
@@ -172,7 +184,7 @@ def check_user(username, password):
     return user
 
 def create_user(username, password, full_name="", business_name="", business_phone="", business_email="", position="", logo_path=""):
-    """إنشاء مستخدم جديد مع كلمة المرور الخاصة به"""
+    """إنشاء مستخدم جديد"""
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -288,14 +300,12 @@ def generate_facture_80mm(cart_data, titre="FACTURE", user_info=None):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=5)
     
-    # شعار المكتب إذا وجد
     if user_info and user_info[8] and os.path.exists(user_info[8]):
         try:
             pdf.image(user_info[8], x=5, y=5, w=20)
         except:
             pass
     
-    # معلومات المكتب (من بيانات المستخدم)
     pdf.set_font("Arial", 'B', 14)
     business_name = user_info[4] if user_info and user_info[4] else "اسم المكتب"
     pdf.cell(70, 8, business_name, ln=True, align='C')
@@ -2005,6 +2015,7 @@ if not st.session_state.authenticated:
         with col2:
             st.info("📝 التسجيل: أنشئ حسابك الخاص")
             st.info("🔑 أدخل اسم المستخدم وكلمة المرور")
+            st.info("👤 المستخدم الافتراضي: admin / admin123")
     
     else:
         st.subheader(t("register_button"))
