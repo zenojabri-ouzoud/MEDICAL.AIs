@@ -14,6 +14,14 @@ import plotly.graph_objects as go
 import hashlib
 import base64
 from PIL import Image
+import sys
+import re
+
+# ==================== تعيين الترميز ==================== #
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # ==================== إعداد SQLite ==================== #
 DB_NAME = "business_management.db"
@@ -293,80 +301,102 @@ def get_next_invoice_number(user_id):
                 pass
     return f"FACT-{len(df_ventes) + 1:04d}"
 
+def clean_text_for_pdf(text):
+    """تنظيف النص للاستخدام في PDF"""
+    if text is None:
+        return ""
+    # إزالة الأحرف غير المدعومة
+    text = re.sub(r'[^\x00-\x7F]+', ' ', str(text))
+    # إزالة الأحرف الخاصة
+    text = re.sub(r'[^a-zA-Z0-9\s\.\,\-\_\:\/]', '', text)
+    return text.strip()
+
 def generate_facture_80mm(cart_data, titre="FACTURE", user_info=None):
-    """إنشاء فاتورة PDF مع معلومات المكتب"""
-    invoice_number = get_next_invoice_number(user_info[0] if user_info else None)
-    pdf = FPDF('P', 'mm', (80, 297))
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=5)
-    
-    if user_info and user_info[8] and os.path.exists(user_info[8]):
-        try:
-            pdf.image(user_info[8], x=5, y=5, w=20)
-        except:
-            pass
-    
-    pdf.set_font("Arial", 'B', 14)
-    business_name = user_info[4] if user_info and user_info[4] else "اسم المكتب"
-    pdf.cell(70, 8, business_name, ln=True, align='C')
-    
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(70, 6, titre, ln=True, align='C')
-    
-    pdf.set_font("Arial", size=8)
-    pdf.cell(70, 4, f"Facture N°: {invoice_number}", ln=True, align='C')
-    
-    if user_info:
-        if user_info[5]:
-            pdf.cell(70, 4, f"Tel: {user_info[5]}", ln=True, align='C')
-        if user_info[6]:
-            pdf.cell(70, 4, user_info[6], ln=True, align='C')
-        if user_info[3]:
-            pdf.cell(70, 4, f"Responsable: {user_info[3]}", ln=True, align='C')
-        if user_info[7]:
-            pdf.cell(70, 4, f"Poste: {user_info[7]}", ln=True, align='C')
-    
-    pdf.cell(70, 4, "-" * 40, ln=True, align='C')
-    
-    now = datetime.now(pytz.timezone("Africa/Casablanca"))
-    pdf.set_font("Arial", size=8)
-    pdf.cell(70, 4, f"Date: {now.strftime('%d/%m/%Y')}", ln=True, align='L')
-    pdf.cell(70, 4, f"Heure: {now.strftime('%H:%M:%S')}", ln=True, align='L')
-    pdf.cell(70, 4, "-" * 40, ln=True, align='C')
-    
-    pdf.set_font("Arial", 'B', 8)
-    pdf.cell(35, 5, "Produit", 1, 0, 'C')
-    pdf.cell(10, 5, "Qte", 1, 0, 'C')
-    pdf.cell(12, 5, "Prix", 1, 0, 'C')
-    pdf.cell(13, 5, "Total", 1, 0, 'C')
-    pdf.ln(5)
-    
-    pdf.set_font("Arial", size=7)
-    tg = 0
-    for item in cart_data:
-        nom = str(item.get('Nom', item.get('Code', '')))[:18]
-        q = float(item.get('Quantité', 0))
-        p = float(item.get('Prix', 0))
-        tot = q * p
-        tg += tot
-        pdf.cell(35, 4, nom, 1)
-        pdf.cell(10, 4, str(q), 1, 0, 'C')
-        pdf.cell(12, 4, f"{p:.2f}", 1, 0, 'C')
-        pdf.cell(13, 4, f"{tot:.2f}", 1, 0, 'C')
-        pdf.ln(4)
-    
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(70, 6, "-" * 40, ln=True, align='C')
-    pdf.cell(70, 6, f"TOTAL: {tg:.2f} DH", ln=True, align='R')
-    pdf.cell(70, 4, "-" * 40, ln=True, align='C')
-    
-    pdf.set_font("Arial", 'I', 7)
-    pdf.cell(70, 4, "Merci pour votre visite!", ln=True, align='C')
-    pdf.cell(70, 4, "A bientot!", ln=True, align='C')
-    
-    file_path = f"facture_{invoice_number}.pdf"
-    pdf.output(file_path)
-    return file_path, invoice_number
+    """إنشاء فاتورة PDF مع دعم اللغة العربية"""
+    try:
+        invoice_number = get_next_invoice_number(user_info[0] if user_info else None)
+        
+        pdf = FPDF('P', 'mm', (80, 297))
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=5)
+        
+        # استخدام خط يدعم Unicode
+        pdf.set_font("Helvetica", 'B', 14)
+        
+        # شعار المكتب إذا وجد
+        if user_info and user_info[8] and os.path.exists(user_info[8]):
+            try:
+                pdf.image(user_info[8], x=5, y=5, w=20)
+            except:
+                pass
+        
+        # معلومات المكتب
+        business_name = user_info[4] if user_info and user_info[4] else "Business"
+        business_name_clean = clean_text_for_pdf(business_name)
+        pdf.cell(70, 8, business_name_clean, ln=True, align='C')
+        
+        pdf.set_font("Helvetica", 'B', 10)
+        titre_clean = clean_text_for_pdf(titre)
+        pdf.cell(70, 6, titre_clean, ln=True, align='C')
+        
+        pdf.set_font("Helvetica", '', 8)
+        pdf.cell(70, 4, f"Facture N°: {invoice_number}", ln=True, align='C')
+        
+        if user_info:
+            if user_info[5]:
+                pdf.cell(70, 4, f"Tel: {user_info[5]}", ln=True, align='C')
+            if user_info[6]:
+                pdf.cell(70, 4, clean_text_for_pdf(user_info[6]), ln=True, align='C')
+            if user_info[3]:
+                pdf.cell(70, 4, f"Responsable: {clean_text_for_pdf(user_info[3])}", ln=True, align='C')
+            if user_info[7]:
+                pdf.cell(70, 4, f"Poste: {clean_text_for_pdf(user_info[7])}", ln=True, align='C')
+        
+        pdf.cell(70, 4, "-" * 40, ln=True, align='C')
+        
+        now = datetime.now(pytz.timezone("Africa/Casablanca"))
+        pdf.set_font("Helvetica", '', 8)
+        pdf.cell(70, 4, f"Date: {now.strftime('%d/%m/%Y')}", ln=True, align='L')
+        pdf.cell(70, 4, f"Heure: {now.strftime('%H:%M:%S')}", ln=True, align='L')
+        pdf.cell(70, 4, "-" * 40, ln=True, align='C')
+        
+        pdf.set_font("Helvetica", 'B', 8)
+        pdf.cell(35, 5, "Produit", 1, 0, 'C')
+        pdf.cell(10, 5, "Qte", 1, 0, 'C')
+        pdf.cell(12, 5, "Prix", 1, 0, 'C')
+        pdf.cell(13, 5, "Total", 1, 0, 'C')
+        pdf.ln(5)
+        
+        pdf.set_font("Helvetica", '', 7)
+        tg = 0
+        for item in cart_data:
+            nom = str(item.get('Nom', item.get('Code', '')))[:18]
+            nom_clean = clean_text_for_pdf(nom)
+            q = float(item.get('Quantité', 0))
+            p = float(item.get('Prix', 0))
+            tot = q * p
+            tg += tot
+            pdf.cell(35, 4, nom_clean, 1)
+            pdf.cell(10, 4, str(q), 1, 0, 'C')
+            pdf.cell(12, 4, f"{p:.2f}", 1, 0, 'C')
+            pdf.cell(13, 4, f"{tot:.2f}", 1, 0, 'C')
+            pdf.ln(4)
+        
+        pdf.set_font("Helvetica", 'B', 10)
+        pdf.cell(70, 6, "-" * 40, ln=True, align='C')
+        pdf.cell(70, 6, f"TOTAL: {tg:.2f} DH", ln=True, align='R')
+        pdf.cell(70, 4, "-" * 40, ln=True, align='C')
+        
+        pdf.set_font("Helvetica", 'I', 7)
+        pdf.cell(70, 4, "Merci pour votre visite!", ln=True, align='C')
+        pdf.cell(70, 4, "A bientot!", ln=True, align='C')
+        
+        file_path = f"facture_{invoice_number}.pdf"
+        pdf.output(file_path)
+        return file_path, invoice_number
+    except Exception as e:
+        st.error(f"❌ خطأ في إنشاء الفاتورة: {str(e)}")
+        return None, None
 
 def generate_impression_pdf(prix_page, nombre, user_info=None):
     cart_data = [{
@@ -545,7 +575,7 @@ def play_success_sound():
     """
     components.html(sound_html, height=0)
 
-# ==================== نظام الترجمة الكامل ==================== #
+# ==================== نظام الترجمة ==================== #
 if "lang" not in st.session_state:
     st.session_state.lang = "ar"
 
@@ -2291,30 +2321,32 @@ if menu == t("pos"):
                     total = float(product['Prix'])
                     
                     facture_result = generate_facture_80mm([{"Nom": product.get('Nom', code_auto), "Quantité": 1, "Prix": float(product['Prix']), "Total": total}], "FACTURE DE VENTE", user_info)
-                    facture_path, invoice_number = facture_result
-                    
-                    save_to_table("ventes", {
-                        "Code": code_auto,
-                        "Quantité": 1.0,
-                        "Prix": float(product['Prix']),
-                        "Total": total,
-                        "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                        "Nom": product.get('Nom', code_auto),
-                        "Facture": invoice_number
-                    }, user_id)
-                    
-                    update_table("stock", {
-                        "Quantité": float(product['Quantité']) - 1
-                    }, product['id'], user_id)
-                    
-                    play_success_sound()
-                    
-                    st.success(f"✅ {product.get('Nom', code_auto)} - {total:.2f} DH | {t('invoice_number')}: {invoice_number}")
-                    st.balloons()
-                    
-                    time.sleep(1.5)
-                    st.rerun()
-                    
+                    if facture_result:
+                        facture_path, invoice_number = facture_result
+                        
+                        save_to_table("ventes", {
+                            "Code": code_auto,
+                            "Quantité": 1.0,
+                            "Prix": float(product['Prix']),
+                            "Total": total,
+                            "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                            "Nom": product.get('Nom', code_auto),
+                            "Facture": invoice_number
+                        }, user_id)
+                        
+                        update_table("stock", {
+                            "Quantité": float(product['Quantité']) - 1
+                        }, product['id'], user_id)
+                        
+                        play_success_sound()
+                        
+                        st.success(f"✅ {product.get('Nom', code_auto)} - {total:.2f} DH | {t('invoice_number')}: {invoice_number}")
+                        st.balloons()
+                        
+                        time.sleep(1.5)
+                        st.rerun()
+                    else:
+                        st.error("❌ حدث خطأ في إنشاء الفاتورة")
                 else:
                     st.error(f"❌ Stock épuisé pour {product.get('Nom', code_auto)}! Quantité disponible: {product['Quantité']}")
             else:
@@ -2363,22 +2395,25 @@ if menu == t("pos"):
                             total = prix * qty
                             
                             facture_result = generate_facture_80mm([{"Nom": nom, "Quantité": qty, "Prix": prix, "Total": total}], "FACTURE DE VENTE", user_info)
-                            facture_path, invoice_number = facture_result
-                            
-                            save_to_table("ventes", {
-                                "Code": code, 
-                                "Quantité": qty, 
-                                "Prix": prix, 
-                                "Total": total, 
-                                "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                                "Nom": nom,
-                                "Facture": invoice_number
-                            }, user_id)
-                            
-                            update_table("stock", {"Quantité": q_old - qty}, doc_id, user_id)
-                            play_success_sound()
-                            st.success(f"{t('sale_success')} {nom} - {total:.2f} DH | Facture: {invoice_number}")
-                            st.rerun()
+                            if facture_result:
+                                facture_path, invoice_number = facture_result
+                                
+                                save_to_table("ventes", {
+                                    "Code": code, 
+                                    "Quantité": qty, 
+                                    "Prix": prix, 
+                                    "Total": total, 
+                                    "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                                    "Nom": nom,
+                                    "Facture": invoice_number
+                                }, user_id)
+                                
+                                update_table("stock", {"Quantité": q_old - qty}, doc_id, user_id)
+                                play_success_sound()
+                                st.success(f"{t('sale_success')} {nom} - {total:.2f} DH | Facture: {invoice_number}")
+                                st.rerun()
+                            else:
+                                st.error("❌ حدث خطأ في إنشاء الفاتورة")
                         else:
                             st.error(f"{t('low_stock_warning')} {q_old}")
                     else:
@@ -2457,22 +2492,25 @@ if menu == t("pos"):
                             total = prix * qty_qr
                             
                             facture_result = generate_facture_80mm([{"Nom": nom, "Quantité": qty_qr, "Prix": prix, "Total": total}], "FACTURE DE VENTE", user_info)
-                            facture_path, invoice_number = facture_result
-                            
-                            save_to_table("ventes", {
-                                "Code": code_qr,
-                                "Quantité": qty_qr,
-                                "Prix": prix,
-                                "Total": total,
-                                "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                                "Nom": nom,
-                                "Facture": invoice_number
-                            }, user_id)
-                            
-                            update_table("stock", {"Quantité": q_old - qty_qr}, doc_id, user_id)
-                            play_success_sound()
-                            st.success(f"✅ {t('sale_success')} {nom} - {qty_qr} x {prix} = {total:.2f} DH | 🧾 Facture: {invoice_number}")
-                            st.rerun()
+                            if facture_result:
+                                facture_path, invoice_number = facture_result
+                                
+                                save_to_table("ventes", {
+                                    "Code": code_qr,
+                                    "Quantité": qty_qr,
+                                    "Prix": prix,
+                                    "Total": total,
+                                    "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                                    "Nom": nom,
+                                    "Facture": invoice_number
+                                }, user_id)
+                                
+                                update_table("stock", {"Quantité": q_old - qty_qr}, doc_id, user_id)
+                                play_success_sound()
+                                st.success(f"✅ {t('sale_success')} {nom} - {qty_qr} x {prix} = {total:.2f} DH | 🧾 Facture: {invoice_number}")
+                                st.rerun()
+                            else:
+                                st.error("❌ حدث خطأ في إنشاء الفاتورة")
                         else:
                             st.error(f"⚠️ {t('low_stock_warning')} {q_old}")
                     else:
@@ -2497,20 +2535,23 @@ if menu == t("pos"):
                     total_libre = float(price) * qty_libre
                     
                     facture_result = generate_facture_80mm([{"Nom": name, "Quantité": qty_libre, "Prix": float(price), "Total": total_libre}], "FACTURE DE VENTE", user_info)
-                    facture_path, invoice_number = facture_result
-                    
-                    save_to_table("ventes", {
-                        "Code": name, 
-                        "Quantité": qty_libre, 
-                        "Prix": float(price), 
-                        "Total": total_libre, 
-                        "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                        "Nom": name,
-                        "Facture": invoice_number
-                    }, user_id)
-                    play_success_sound()
-                    st.success(f"{t('sale_success')} {name} - {qty_libre} x {price} = {total_libre:.2f} DH | Facture: {invoice_number}")
-                    st.rerun()
+                    if facture_result:
+                        facture_path, invoice_number = facture_result
+                        
+                        save_to_table("ventes", {
+                            "Code": name, 
+                            "Quantité": qty_libre, 
+                            "Prix": float(price), 
+                            "Total": total_libre, 
+                            "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                            "Nom": name,
+                            "Facture": invoice_number
+                        }, user_id)
+                        play_success_sound()
+                        st.success(f"{t('sale_success')} {name} - {qty_libre} x {price} = {total_libre:.2f} DH | Facture: {invoice_number}")
+                        st.rerun()
+                    else:
+                        st.error("❌ حدث خطأ في إنشاء الفاتورة")
         
         # ====== Cart ======
         elif mode == t("cart"):
@@ -2577,20 +2618,23 @@ if menu == t("pos"):
                                     }, product['id'], user_id)
                             
                             facture_result = generate_facture_80mm(st.session_state.cart, "FACTURE DE VENTE", user_info)
-                            facture_path, invoice_number = facture_result
-                            
-                            for item in st.session_state.cart:
-                                save_to_table("ventes", {
-                                    **item,
-                                    "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                                    "Facture": invoice_number
-                                }, user_id)
-                            
-                            st.session_state.last_cart = st.session_state.cart.copy()
-                            st.session_state.cart = []
-                            play_success_sound()
-                            st.success(f"✅ {t('invoice_printed')} | Facture: {invoice_number}")
-                            st.rerun()
+                            if facture_result:
+                                facture_path, invoice_number = facture_result
+                                
+                                for item in st.session_state.cart:
+                                    save_to_table("ventes", {
+                                        **item,
+                                        "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                                        "Facture": invoice_number
+                                    }, user_id)
+                                
+                                st.session_state.last_cart = st.session_state.cart.copy()
+                                st.session_state.cart = []
+                                play_success_sound()
+                                st.success(f"✅ {t('invoice_printed')} | Facture: {invoice_number}")
+                                st.rerun()
+                            else:
+                                st.error("❌ حدث خطأ في إنشاء الفاتورة")
                         
                         col_btn1, col_btn2 = st.columns(2)
                         with col_btn1:
@@ -2676,22 +2720,25 @@ if menu == t("pos"):
                                 }, product['id'], user_id)
                             
                         facture_result = generate_facture_80mm(st.session_state.cart, "FACTURE DE VENTE", user_info)
-                        facture_path, invoice_number = facture_result
-                        
-                        for item in st.session_state.cart:
-                            save_to_table("ventes", {
-                                **item,
-                                "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                                "Facture": invoice_number
-                            }, user_id)
-                        
-                        st.session_state.last_cart = st.session_state.cart.copy()
-                        st.session_state.cart = []
-                        play_success_sound()
-                        st.success(f"✅ {t('invoice_printed')} | Facture: {invoice_number}")
-                        st.balloons()
-                        time.sleep(1.5)
-                        st.rerun()
+                        if facture_result:
+                            facture_path, invoice_number = facture_result
+                            
+                            for item in st.session_state.cart:
+                                save_to_table("ventes", {
+                                    **item,
+                                    "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                                    "Facture": invoice_number
+                                }, user_id)
+                            
+                            st.session_state.last_cart = st.session_state.cart.copy()
+                            st.session_state.cart = []
+                            play_success_sound()
+                            st.success(f"✅ {t('invoice_printed')} | Facture: {invoice_number}")
+                            st.balloons()
+                            time.sleep(1.5)
+                            st.rerun()
+                        else:
+                            st.error("❌ حدث خطأ في إنشاء الفاتورة")
                     
                     if st.button("🗑️ Vider le panier", use_container_width=True, key="auto_clear_cart"):
                         st.session_state.cart = []
@@ -3468,31 +3515,34 @@ elif menu == t("services"):
             }]
             
             facture_result = generate_facture_80mm(service_cart, "FACTURE SERVICE", st.session_state.user_info)
-            facture_path, invoice_number = facture_result
-            
-            save_to_table("ventes", {
-                "Code": st.session_state.selected_service,
-                "Quantité": float(quantity),
-                "Prix": float(prix_unitaire),
-                "Total": float(total_service),
-                "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
-                "Nom": st.session_state.selected_service,
-                "Facture": invoice_number
-            }, user_id)
-            
-            play_success_sound()
-            st.success(f"✅ تم إتمام الخدمة: {st.session_state.selected_service} - {total_service:.2f} DH | Facture: {invoice_number}")
-            st.balloons()
-            
-            if os.path.exists("facture_80mm.pdf"):
-                with open("facture_80mm.pdf", "rb") as f:
-                    st.download_button(
-                        "📥 تحميل الفاتورة",
-                        f,
-                        "facture_80mm.pdf",
-                        mime="application/pdf",
-                        key="download_service_invoice"
-                    )
+            if facture_result:
+                facture_path, invoice_number = facture_result
+                
+                save_to_table("ventes", {
+                    "Code": st.session_state.selected_service,
+                    "Quantité": float(quantity),
+                    "Prix": float(prix_unitaire),
+                    "Total": float(total_service),
+                    "Date": datetime.now().strftime('%d/%m/%Y %H:%M'),
+                    "Nom": st.session_state.selected_service,
+                    "Facture": invoice_number
+                }, user_id)
+                
+                play_success_sound()
+                st.success(f"✅ تم إتمام الخدمة: {st.session_state.selected_service} - {total_service:.2f} DH | Facture: {invoice_number}")
+                st.balloons()
+                
+                if os.path.exists("facture_80mm.pdf"):
+                    with open("facture_80mm.pdf", "rb") as f:
+                        st.download_button(
+                            "📥 تحميل الفاتورة",
+                            f,
+                            "facture_80mm.pdf",
+                            mime="application/pdf",
+                            key="download_service_invoice"
+                        )
+            else:
+                st.error("❌ حدث خطأ في إنشاء الفاتورة")
     
     st.markdown("---")
     st.subheader(t("service_history"))
