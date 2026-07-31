@@ -16,7 +16,7 @@ import base64
 from PIL import Image
 
 # ==================== إعداد SQLite ==================== #
-DB_NAME = "ouzoud_services.db"
+DB_NAME = "business_management.db"
 
 def init_database():
     """إنشاء جميع الجداول في قاعدة البيانات"""
@@ -162,23 +162,17 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def check_user(username, password):
+    """التحقق من المستخدم - فقط باستخدام اسم المستخدم وكلمة المرور الخاصة به"""
     conn = get_connection()
     cursor = conn.cursor()
     hashed = hash_password(password)
     cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, hashed))
     user = cursor.fetchone()
     conn.close()
-    
-    if not user and password == "ouzoud2026":
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        user = cursor.fetchone()
-        conn.close()
-    
     return user
 
 def create_user(username, password, full_name="", business_name="", business_phone="", business_email="", position="", logo_path=""):
+    """إنشاء مستخدم جديد مع كلمة المرور الخاصة به"""
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -301,9 +295,9 @@ def generate_facture_80mm(cart_data, titre="FACTURE", user_info=None):
         except:
             pass
     
-    # معلومات المكتب
+    # معلومات المكتب (من بيانات المستخدم)
     pdf.set_font("Arial", 'B', 14)
-    business_name = user_info[4] if user_info and user_info[4] else "OUZOUD SERVICES"
+    business_name = user_info[4] if user_info and user_info[4] else "اسم المكتب"
     pdf.cell(70, 8, business_name, ln=True, align='C')
     
     pdf.set_font("Arial", 'B', 10)
@@ -551,20 +545,105 @@ translations = {
         "fr": "🔐 Connexion",
         "en": "🔐 Login"
     },
+    "username_label": {
+        "ar": "👤 اسم المستخدم",
+        "fr": "👤 Nom d'utilisateur",
+        "en": "👤 Username"
+    },
     "password_label": {
-        "ar": "كلمة المرور:",
-        "fr": "Mot de passe:",
-        "en": "Password:"
+        "ar": "🔑 كلمة المرور",
+        "fr": "🔑 Mot de passe",
+        "en": "🔑 Password"
     },
     "login_button": {
-        "ar": "دخول",
-        "fr": "Connexion",
-        "en": "Login"
+        "ar": "🚪 دخول",
+        "fr": "🚪 Connexion",
+        "en": "🚪 Login"
+    },
+    "register_button": {
+        "ar": "📝 تسجيل جديد",
+        "fr": "📝 Nouveau compte",
+        "en": "📝 Register"
     },
     "wrong_password": {
-        "ar": "❌ كلمة المرور خاطئة!",
-        "fr": "❌ Mot de passe incorrect!",
-        "en": "❌ Wrong password!"
+        "ar": "❌ اسم المستخدم أو كلمة المرور خاطئة!",
+        "fr": "❌ Nom d'utilisateur ou mot de passe incorrect!",
+        "en": "❌ Username or password wrong!"
+    },
+    "fill_all_fields": {
+        "ar": "⚠️ الرجاء ملء جميع الحقول",
+        "fr": "⚠️ Veuillez remplir tous les champs",
+        "en": "⚠️ Please fill all fields"
+    },
+    "user_exists": {
+        "ar": "⚠️ اسم المستخدم موجود مسبقاً",
+        "fr": "⚠️ Nom d'utilisateur existe déjà",
+        "en": "⚠️ Username already exists"
+    },
+    "register_success": {
+        "ar": "✅ تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول",
+        "fr": "✅ Inscription réussie! Vous pouvez maintenant vous connecter",
+        "en": "✅ Registration successful! You can now login"
+    },
+    "cancel": {
+        "ar": "❌ إلغاء",
+        "fr": "❌ Annuler",
+        "en": "❌ Cancel"
+    },
+    "full_name_label": {
+        "ar": "📋 الاسم الكامل",
+        "fr": "📋 Nom complet",
+        "en": "📋 Full name"
+    },
+    "confirm_password": {
+        "ar": "تأكيد كلمة المرور 🔑",
+        "fr": "Confirmer le mot de passe 🔑",
+        "en": "Confirm Password 🔑"
+    },
+    "password_mismatch": {
+        "ar": "❌ كلمة المرور غير متطابقة",
+        "fr": "❌ Les mots de passe ne correspondent pas",
+        "en": "❌ Passwords do not match"
+    },
+    "business_info": {
+        "ar": "🏢 معلومات المكتب",
+        "fr": "🏢 Informations du bureau",
+        "en": "🏢 Business Information"
+    },
+    "business_name_label": {
+        "ar": "اسم المكتب:",
+        "fr": "Nom du bureau:",
+        "en": "Business Name:"
+    },
+    "business_phone_label": {
+        "ar": "رقم الهاتف:",
+        "fr": "Numéro de téléphone:",
+        "en": "Phone Number:"
+    },
+    "business_email_label": {
+        "ar": "البريد الإلكتروني:",
+        "fr": "Email:",
+        "en": "Email:"
+    },
+    "position_label": {
+        "ar": "المنصب:",
+        "fr": "Poste:",
+        "en": "Position:"
+    },
+    "logo_label": {
+        "ar": "الشعار:",
+        "fr": "Logo:",
+        "en": "Logo:"
+    },
+    "update_info_button": {
+        "ar": "💾 تحديث المعلومات",
+        "fr": "💾 Mettre à jour les informations",
+        "en": "💾 Update Information"
+    },
+    "info_updated": {
+        "ar": "✅ تم تحديث المعلومات بنجاح!",
+        "fr": "✅ Informations mises à jour avec succès!",
+        "en": "✅ Information updated successfully!"
     },
     "menu_main": {
         "ar": "القائمة الرئيسية",
@@ -906,11 +985,6 @@ translations = {
         "fr": "✅ Oui, réinitialiser",
         "en": "✅ Yes, reset"
     },
-    "cancel": {
-        "ar": "❌ إلغاء",
-        "fr": "❌ Annuler",
-        "en": "❌ Cancel"
-    },
     "reset_success": {
         "ar": "✅ تم تصفير الخزينة بنجاح! إجمالي اليوم:",
         "fr": "✅ Caisse réinitialisée avec succès! Total du jour:",
@@ -1130,11 +1204,6 @@ translations = {
         "ar": "❌ حدث خطأ. الرجاء المحاولة مرة أخرى.",
         "fr": "❌ Une erreur est survenue. Veuillez réessayer.",
         "en": "❌ An error occurred. Please try again."
-    },
-    "fill_all_fields": {
-        "ar": "⚠️ الرجاء ملء جميع الحقول",
-        "fr": "⚠️ Veuillez remplir tous les champs",
-        "en": "⚠️ Please fill all fields"
     },
     "product_added": {
         "ar": "✅ تم إضافة المنتج بنجاح!",
@@ -1356,26 +1425,6 @@ translations = {
         "fr": "🔮 Prévisions des ventes",
         "en": "🔮 Sales Prediction"
     },
-    "register_button": {
-        "ar": "📝 تسجيل جديد",
-        "fr": "📝 Nouveau compte",
-        "en": "📝 Register"
-    },
-    "username_label": {
-        "ar": "👤 اسم المستخدم",
-        "fr": "👤 Nom d'utilisateur",
-        "en": "👤 Username"
-    },
-    "full_name_label": {
-        "ar": "📋 الاسم الكامل",
-        "fr": "📋 Nom complet",
-        "en": "📋 Full name"
-    },
-    "user_exists": {
-        "ar": "⚠️ اسم المستخدم موجود مسبقاً",
-        "fr": "⚠️ Nom d'utilisateur existe déjà",
-        "en": "⚠️ Username already exists"
-    },
     "invoices_list": {
         "ar": "📋 قائمة الفواتير",
         "fr": "📋 Liste des factures",
@@ -1395,51 +1444,6 @@ translations = {
         "ar": "ℹ️ لا توجد فواتير مسجلة",
         "fr": "ℹ️ Aucune facture enregistrée",
         "en": "ℹ️ No invoices recorded"
-    },
-    "register_success": {
-        "ar": "✅ تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول",
-        "fr": "✅ Inscription réussie! Vous pouvez maintenant vous connecter",
-        "en": "✅ Registration successful! You can now login"
-    },
-    "business_info": {
-        "ar": "🏢 معلومات المكتب",
-        "fr": "🏢 Informations du bureau",
-        "en": "🏢 Business Information"
-    },
-    "business_name_label": {
-        "ar": "اسم المكتب:",
-        "fr": "Nom du bureau:",
-        "en": "Business Name:"
-    },
-    "business_phone_label": {
-        "ar": "رقم الهاتف:",
-        "fr": "Numéro de téléphone:",
-        "en": "Phone Number:"
-    },
-    "business_email_label": {
-        "ar": "البريد الإلكتروني:",
-        "fr": "Email:",
-        "en": "Email:"
-    },
-    "position_label": {
-        "ar": "المنصب:",
-        "fr": "Poste:",
-        "en": "Position:"
-    },
-    "logo_label": {
-        "ar": "الشعار:",
-        "fr": "Logo:",
-        "en": "Logo:"
-    },
-    "update_info_button": {
-        "ar": "💾 تحديث المعلومات",
-        "fr": "💾 Mettre à jour les informations",
-        "en": "💾 Update Information"
-    },
-    "info_updated": {
-        "ar": "✅ تم تحديث المعلومات بنجاح!",
-        "fr": "✅ Informations mises à jour avec succès!",
-        "en": "✅ Information updated successfully!"
     }
 }
 
@@ -1497,7 +1501,7 @@ def export_import_buttons(table_name, data_df, user_id):
                     st.success(t('import_success'))
                     st.rerun()
 
-st.set_page_config(layout="wide", page_title="OUZOUD SERVICES")
+st.set_page_config(layout="wide", page_title="Gestion d'Entreprise")
 
 # ==================== دوال الماسح ==================== #
 def mobile_barcode_scanner(session_key):
@@ -1953,7 +1957,7 @@ if "show_business_info" not in st.session_state:
 
 # ==================== صفحة تسجيل الدخول ==================== #
 if not st.session_state.authenticated:
-    st.title("OUZOUD SERVICES")
+    st.title("🏢 Gestion d'Entreprise")
     
     lang_col1, lang_col2, lang_col3 = st.columns(3)
     with lang_col1:
@@ -1999,26 +2003,29 @@ if not st.session_state.authenticated:
                     st.rerun()
         
         with col2:
-            st.info("💡 كلمة المرور الأساسية: ouzoud2026")
-            st.info("📝 يمكنك التسجيل لإنشاء حساب خاص بك")
+            st.info("📝 التسجيل: أنشئ حسابك الخاص")
+            st.info("🔑 أدخل اسم المستخدم وكلمة المرور")
     
     else:
         st.subheader(t("register_button"))
         new_username = st.text_input(t("username_label"), key="reg_username")
         new_fullname = st.text_input(t("full_name_label"), key="reg_fullname")
+        new_password = st.text_input(t("password_label"), type="password", key="reg_password")
+        confirm_password = st.text_input(t("confirm_password"), type="password", key="reg_confirm")
+        
+        st.divider()
+        st.subheader(t("business_info"))
         new_business_name = st.text_input(t("business_name_label"), key="reg_business_name")
         new_business_phone = st.text_input(t("business_phone_label"), key="reg_business_phone")
         new_business_email = st.text_input(t("business_email_label"), key="reg_business_email")
         new_position = st.text_input(t("position_label"), key="reg_position")
-        new_password = st.text_input(t("password_label"), type="password", key="reg_password")
-        confirm_password = st.text_input("تأكيد كلمة المرور 🔑", type="password", key="reg_confirm")
         
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button(t("register_button"), type="primary", use_container_width=True):
                 if new_username and new_password and confirm_password:
                     if new_password != confirm_password:
-                        st.error("❌ كلمة المرور غير متطابقة")
+                        st.error(t("password_mismatch"))
                     else:
                         if create_user(new_username, new_password, new_fullname, new_business_name, new_business_phone, new_business_email, new_position):
                             st.success(t("register_success"))
@@ -2038,7 +2045,7 @@ if not st.session_state.authenticated:
 
 # ==================== الشريط الجانبي ==================== #
 with st.sidebar:
-    st.title("OUZOUD SERVICES")
+    st.title("🏢 Gestion")
     
     if st.session_state.user_info:
         user = st.session_state.user_info
@@ -2133,9 +2140,6 @@ with st.sidebar:
         pass
     
     st.divider()
-    st.markdown("### ℹ️ OUZOUD SERVICES")
-    st.markdown("📞 07.81.02.82.43")
-    st.markdown("📧 maaridprint@gmail.com")
     st.markdown(f"🕐 {datetime.now().strftime('%d/%m/%Y %H:%M')}")
     
     if st.button("🚪 تسجيل الخروج"):
@@ -2144,9 +2148,7 @@ with st.sidebar:
         st.session_state.user_id = None
         st.rerun()
 
-# ==================== باقي الكود (الواجهات) ==================== #
-# هنا تأتي بقية الأقسام: POS، المخزون، الطباعة، الخزينة، الديون، الفواتير، الطلبيات، الخدمات، والأدوات
-
+# ==================== Dashboard ==================== #
 if menu == t("dashboard"):
     st.header(t("dashboard"))
     
