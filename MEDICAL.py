@@ -2752,14 +2752,19 @@ elif menu == t("stock"):
         
         if st.button(t("add_button"), key="stock_add_btn"):
             if name:
-                save_to_table("stock", {
-                    "Nom": name, 
-                    "Prix": float(price), 
-                    "Quantité": float(qty), 
-                    "Code-barres": barcode if barcode else ""
-                }, user_id)
-                st.success(t("product_added"))
-                st.rerun()
+                try:
+                    conn = get_connection()
+                    cursor = conn.cursor()
+                    cursor.execute('''
+                        INSERT INTO stock (user_id, Nom, Prix, Quantité, "Code-barres")
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (user_id, name, float(price), float(qty), barcode if barcode else ""))
+                    conn.commit()
+                    conn.close()
+                    st.success(t("product_added"))
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ خطأ: {str(e)}")
             else:
                 st.error(t("fill_all_fields"))
     
@@ -2824,13 +2829,20 @@ elif menu == t("stock"):
                     )
                 
                 if st.button(t("update_button"), key="stock_update_btn"):
-                    update_table("stock", {
-                        'Quantité': new_qty,
-                        'Prix': new_price,
-                        'Code-barres': new_barcode if new_barcode else ""
-                    }, product_data['id'], user_id)
-                    st.success(t("product_updated"))
-                    st.rerun()
+                    try:
+                        conn = get_connection()
+                        cursor = conn.cursor()
+                        cursor.execute('''
+                            UPDATE stock 
+                            SET Quantité = ?, Prix = ?, "Code-barres" = ?
+                            WHERE id = ? AND user_id = ?
+                        ''', (new_qty, new_price, new_barcode if new_barcode else "", product_data['id'], user_id))
+                        conn.commit()
+                        conn.close()
+                        st.success(t("product_updated"))
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ خطأ: {str(e)}")
 
 # ==================== Impression ==================== #
 elif menu == t("impression"):
